@@ -29,7 +29,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM usuarios WHERE username = ? AND password = ?', 
+            'SELECT * FROM usuario WHERE nomusuari = ? AND password = ?', 
             [username, password]
         );
 
