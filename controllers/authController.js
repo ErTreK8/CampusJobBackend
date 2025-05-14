@@ -14,8 +14,16 @@ const login = async (req, res) => {
         );
 
         if (rows.length > 0) {
-            res.json({ success: true, message: 'Login exitoso' });
-        } else {
+            const user = rows[0];
+            res.json({ 
+                success: true, 
+                message: 'Login exitoso', 
+                idUsuario: user.idusr, 
+                nivelUsuario: user.nivell 
+            });
+        }
+        else
+        {
             res.json({ success: false, message: 'Usuario o contraseña incorrectos' });
         }
     } catch (error) {
