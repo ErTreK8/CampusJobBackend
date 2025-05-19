@@ -1,5 +1,5 @@
-// authController.js
 const pool = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 const login = async (req, res) => {
   const { username, password } = req.body;
@@ -9,16 +9,11 @@ const login = async (req, res) => {
   }
 
   try {
-    // Seleccionamos idusr y nivell, los renombramos a idUsuario / nivelUsuario
+    // 1. Selecciona también el campo `activo`
     const [rows] = await pool.query(
-      `SELECT 
-         idusr    AS idUsuario,
-         nivell   AS nivelUsuario
-       FROM usuario
-       WHERE nomusuari = ? AND password = ?`,
-      [username, password]
+      'SELECT idusr, nivell, password, actiu FROM usuario WHERE nomusuari = ?', 
+      [username]
     );
-
 
     if (rows.length === 0) {
       return res.json({ success: false, message: 'Credenciales incorrectas' });
@@ -26,13 +21,29 @@ const login = async (req, res) => {
 
     const user = rows[0];
 
-    // Enviamos el user completo (tiene idUsuario y nivelUsuario)
+    // 2. Verificar si el usuario está activo
+    if (user.actiu !== 1) {
+      return res.json({
+        success: false,
+        message: 'Usuario inactivo'
+      });
+    }
+
+    // 3. Comparar contraseña encriptada
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
+      return res.json({ success: false, message: 'Credenciales incorrectas' });
+    }
+
+    // 4. Si todo ok → devolver datos del usuario
     return res.json({
       success: true,
       message: 'Login exitoso',
-      idUsuario: user.idUsuario,
-      nivelUsuario: user.nivelUsuario
+      idUsuario: user.idusr,
+      nivelUsuario: user.nivell
     });
+
   } catch (error) {
     console.error('[Backend] Error en login:', error);
     return res.status(500).json({ success: false, message: 'Error en el servidor' });
