@@ -111,4 +111,33 @@ const getCursosByCentro = async (req, res) => {
   }
 };
 
-module.exports = { getCursosByCentro };
+module.exports = { getCursosByCentro };import { Navigate, useLocation } from "react-router-dom";
+
+export default function ProtectedRoute({ children, requiredRole }) {
+  const location = useLocation();
+  const idUsuario = localStorage.getItem("idUsuario");
+  const nivelUsuario = localStorage.getItem("nivelUsuario");
+
+  // Si no está logueado → redirige al login
+  if (!idUsuario) return <Navigate to="/login" replace />;
+
+  // Si requiere rol y no coincide → redirige a /unauthorized
+  if (requiredRole && !String(requiredRole).includes(nivelUsuario)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Para rutas dinámicas con /centro/:id/curso
+  const pathSegments = location.pathname.split("/");
+  const idCentroURL = pathSegments[2]; // Ej: /centro/123/curso → idCentro = 123
+
+  // Opcional: Validar que el usuario tiene acceso al centro (ej: alumno, empresa, profesor)
+  if (idCentroURL && nivelUsuario != 4) {
+    const idCentroUsuario = localStorage.getItem("idCentro");
+    if (idCentroUsuario != idCentroURL) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
+
+  // Si todo bien → muestra el contenido
+  return children;
+}
