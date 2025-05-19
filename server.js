@@ -1,8 +1,11 @@
+// server.js
+
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const ofertasRoutes = require('./routes/ofertasRoutes');
+const adminCentroRoutes = require('./routes/adminCentroRoutes'); // 👈 Añade esta línea
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -15,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', emailRoutes);
 app.use('/api/auth', ofertasRoutes);
+app.use('/api/adminCentro', adminCentroRoutes); // 👈 Añade esta línea para que `/api/adminCentro/crear` funcione
 
 // Iniciar servidor
 app.listen(PORT, () => {

@@ -22,8 +22,8 @@ const createCentroYUsuario = async (req, res) => {
 
     // Crear usuario admin del centro
     const [userResult] = await pool.query(
-      'INSERT INTO usuario (email, nomusuari, password, nivell) VALUES (?, ?, ?, ?)',
-      [emailUsrAdmin, nomUsrAdmin, password, 3] // Nivel 3 = AdminCentro
+      'INSERT INTO usuario (email, nomusuari, password, nivell, actiu) VALUES (?, ?, ?, ?, ?)',
+      [emailUsrAdmin, nomUsrAdmin, password, 3, 1] // Nivel 3 = AdminCentro
     );
 
     const idUsrAdmin = userResult.insertId;
