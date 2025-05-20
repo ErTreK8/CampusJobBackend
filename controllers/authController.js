@@ -1,5 +1,4 @@
-// controllers/authController.js
-const { getConnection } = require("../config/db");
+const { query } = require("../config/db"); // ✅ Usamos el helper `query`
 const bcrypt = require("bcryptjs");
 
 const login = async (req, res) => {
@@ -9,11 +8,12 @@ const login = async (req, res) => {
   }
 
   try {
-    const conn = await getConnection();
-    const [rows] = await conn.query(
+    // ✅ Usamos `query()` directamente sin necesidad de getConnection()
+    const [rows] = await query(
       "SELECT idusr, nivell, password, actiu FROM usuario WHERE nomusuari = ?",
       [username]
     );
+
     if (!rows.length) {
       return res.json({ success: false, message: "Credenciales incorrectas" });
     }

@@ -1,53 +1,67 @@
-// controllers/adminCentroController.js
-const { getConnection } = require("../config/db");
+const { query } = require("../config/db");
 const { generateRandomPassword } = require("../utils/generatePassword");
 const { sendEmail } = require("../services/emailService");
 const bcrypt = require("bcryptjs");
 
 const createCentroYUsuario = async (req, res) => {
   const { nombre, correo, telefono, emailUsrAdmin, nomUsrAdmin, logoCentro } = req.body;
+
   if (!nombre || !correo || !telefono || !emailUsrAdmin || !nomUsrAdmin) {
     return res.status(400).json({ success: false, message: "Faltan datos" });
   }
 
   try {
-    const conn = await getConnection();
-
     // 1) Verificar usuario existente
-    const [existingUser] = await conn.query(
+    const existingUser = await query(
       "SELECT idusr FROM usuario WHERE email = ? OR nomusuari = ?",
       [emailUsrAdmin, nomUsrAdmin]
     );
-    if (existingUser.length) {
-      return res.status(400).json({ success: false, message: "Usuario ya existe", errorType: "userExists" });
+
+    if (existingUser && existingUser.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "El correo o nombre de usuario ya está en uso", 
+        errorType: "userExists" 
+      });
     }
 
     // 2) Verificar centro existente
-    const [existingCenter] = await conn.query(
-      "SELECT idcentro FROM centro WHERE nombreCentro = ? OR email = ? OR telefono = ?",
+    const existingCenter = await query(
+      "SELECT idcentro FROM centro WHERE nombrecentro = ? OR email = ? OR telefono = ?",
       [nombre, correo, telefono]
     );
-    if (existingCenter.length) {
-      return res.status(400).json({ success: false, message: "Centro ya existe", errorType: "centerExists" });
+
+    if (existingCenter && existingCenter.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Ya existe un centro con ese nombre, correo o teléfono", 
+        errorType: "centerExists" 
+      });
     }
 
-    // 3) Tamaño logo
+    // 3) Validar tamaño del logo
     if (logoCentro && logoCentro.length > 5 * 1024 * 1024 * 1.37) {
-      return res.status(400).json({ success: false, message: "Logo demasiado grande", errorType: "logoTooBig" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "El logo no puede superar los 5MB", 
+        errorType: "logoTooBig" 
+      });
     }
 
-    // 4) Generar password e insertar usuario
+    // 4) Generar contraseña e insertar usuario
     const rawPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
-    const [userResult] = await conn.query(
+
+    const userResult = await query(
       "INSERT INTO usuario (email, nomusuari, password, nivell, actiu) VALUES (?, ?, ?, ?, ?)",
       [emailUsrAdmin, nomUsrAdmin, hashedPassword, 3, 1]
     );
+
     const idUsrAdmin = userResult.insertId;
 
     // 5) Insertar centro
-    await conn.query(
-      "INSERT INTO centro (nombreCentro, email, telefono, idUsrAdmin, logoCentro) VALUES (?, ?, ?, ?, ?)",
+    await query(
+      "INSERT INTO centro (nombrecentro, email, telefono, idusradmin, logoCentro) VALUES (?, ?, ?, ?, ?)",
       [nombre, correo, telefono, idUsrAdmin, logoCentro || null]
     );
 
@@ -58,10 +72,18 @@ const createCentroYUsuario = async (req, res) => {
       `Usuario: ${nomUsrAdmin}\nContraseña: ${rawPassword}`
     );
 
-    return res.json({ success: true, message: "Centro y usuario creados" });
+    return res.json({ 
+      success: true, 
+      message: "Centro y usuario creados exitosamente" 
+    });
+
   } catch (error) {
     console.error("Error en createCentroYUsuario:", error.message);
-    return res.status(500).json({ success: false, message: "Error en el servidor" });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Error en el servidor", 
+      error: error.message 
+    });
   }
 };
 
