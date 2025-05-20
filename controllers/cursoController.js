@@ -89,6 +89,7 @@ const createCurso = async (req, res) => {
 };
 
 // ✅ Obtener cursos por centro (solo campos existentes)
+// controllers/cursoController.js
 const getCursosByCentro = async (req, res) => {
   const { centroId } = req.params;
 
@@ -100,9 +101,9 @@ const getCursosByCentro = async (req, res) => {
   }
 
   try {
-    // ✅ Solo campos que existen en tu BBDD
+    // ✅ Usamos `SELECT *` para incluir `fotoCurso`
     const cursos = await query(
-      'SELECT idcurso, nomcurs, desccurs, idcentro FROM curso WHERE idcentro = ?', 
+      'SELECT * FROM curso WHERE idcentro = ?', 
       [centroId]
     );
 
