@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const { getCursosByCentro } = require('../controllers/cursoController');
+// routes/cursoRoutes.js
 
-// Ruta protegida con validación de rol y centro
-router.get('/:id/curso', getCursosByCentro);
+const express = require("express");
+const router  = express.Router();
+const { createCurso } = require("../controllers/cursoController");
+
+// POST /api/centro/:centroId/curso
+router.post("/:centroId/curso", createCurso);
 
 module.exports = router;
