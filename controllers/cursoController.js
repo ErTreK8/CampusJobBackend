@@ -1,90 +1,53 @@
 const { query } = require("../config/db");
 
 const createCurso = async (req, res) => {
-  const { nombre, descripcion } = req.body;
+  const { nombre, descripcion, foto, idUsuario, nivelUsuario } = req.body;
   const { centroId } = req.params;
-  const idUsuario = req.body.idUsuario;
-  const nivelUsuario = req.body.nivelUsuario;
 
   if (!nombre || !descripcion || !centroId || !idUsuario || nivelUsuario === undefined) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Faltan campos obligatorios' 
-    });
+    return res.status(400).json({ success: false, message: 'Faltan campos' });
   }
-
   try {
     const centroIdNum = parseInt(centroId, 10);
     if (isNaN(centroIdNum)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'ID del centro inválido' 
-      });
+      return res.status(400).json({ success: false, message: 'ID del centro inválido' });
     }
+    console.log(`${centroId}`);
 
-    // ✅ Verificar que el centro exista
-    const [centro] = await query(
-      'SELECT idcentro FROM centro WHERE idcentro = ?', 
-      [centroIdNum]
-    );
-    if (!centro.length) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Centro no encontrado' 
-      });
+    const [centro] = await query('SELECT * FROM centro WHERE idcentro = ?', [centroIdNum]);
+    if (!centro || centro.length === 0) {
+      return res.status(404).json({ success: false, message: 'Centro no encontrado' });
     }
-
-    // ✅ Verificar que el usuario tenga acceso al centro
     const [user] = await query(
-      'SELECT idusr, nivell, idcentro FROM usuario WHERE idusr = ?', 
+      'SELECT idusr, nivell FROM usuario WHERE idusr = ?', 
       [idUsuario]
     );
-    if (!user.length) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Usuario no encontrado' 
-      });
+    if (!user || user.length === 0) {
+      return res.status(404).json({ success: false, message: 'Centro no encontrado' });
     }
 
-    const usuario = user[0];
-
-    if (nivelUsuario == 3 && usuario.idcentro != centroIdNum) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'No tienes acceso a este centro' 
-      });
+    if (parseInt(nivelUsuario) === 3 && user[0].idcentro !== centroIdNum) {
+      return res.status(403).json({ success: false, message: 'No tienes acceso a este centro' });
     }
 
     if (![4, 3].includes(parseInt(nivelUsuario))) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Permiso insuficiente' 
-      });
+      return res.status(403).json({ success: false, message: 'Permiso insuficiente' });
     }
 
-    // ✅ Insertar curso (sin fotoCurso)
     const result = await query(
-      'INSERT INTO curso (nomcurs, desccurs, idcentro) VALUES (?, ?, ?)',
-      [nombre, descripcion, centroIdNum]
+      'INSERT INTO curso (nomcurs, desccurs, fotoCurso, idcentro) VALUES (?, ?, ?, ?)',
+      [nombre, descripcion, foto || null, centroIdNum]
     );
 
     return res.json({
       success: true,
       message: 'Curso creado exitosamente',
-      data: {
-        idCurso: result.insertId,
-        nombre: nombre,
-        descripcion: descripcion,
-        centroId: centroIdNum
-      }
+      data: { idCurso: result.insertId, nombre, descripcion, centroId: centroIdNum }
     });
 
   } catch (error) {
     console.error('Error al crear curso:', error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error en el servidor' 
-    });
+    return res.status(500).json({ success: false, message: 'Error en el servidor' });
   }
 };
 
