@@ -1,17 +1,20 @@
-const { query } = require("../config/db"); // ✅ Usamos el helper `query`
+// controllers/authController.js
+const { query } = require("../config/db");
 const bcrypt = require("bcryptjs");
 
-const login = async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
+// ✅ Asegúrate de que esta función se exporta correctamente
+async function login(req, res) {
+  const { usernameOrEmail, password } = req.body;
+
+  if (!usernameOrEmail || !password) {
     return res.status(400).json({ success: false, message: "Faltan credenciales" });
   }
 
   try {
-    // ✅ Usamos `query()` directamente sin necesidad de getConnection()
-    const [rows] = await query(
-      "SELECT idusr, nivell, password, actiu FROM usuario WHERE nomusuari = ?",
-      [username]
+    // Buscar usuario por nombre o email
+    const rows = await query(
+      "SELECT idusr, nomusuari, email, password, nivell, actiu, lastSingIn FROM usuario WHERE LOWER(nomusuari) = LOWER(?) OR LOWER(email) = LOWER(?)",
+      [usernameOrEmail, usernameOrEmail]
     );
 
     if (!rows.length) {
@@ -19,13 +22,22 @@ const login = async (req, res) => {
     }
 
     const user = rows[0];
+
     if (user.actiu !== 1) {
       return res.json({ success: false, message: "Usuario inactivo" });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.json({ success: false, message: "Credenciales incorrectas" });
+      return res.json({ success: false, message: "Contraseña incorrecta" });
+    }
+
+    // Determinar si es el primer inicio
+    const firstLogin = user.lastSingIn === null;
+
+    // Actualizar `lastSingIn` solo si no es el primer inicio y es nivel 0, 1 o 2
+    if (!firstLogin && [0, 1, 2].includes(user.nivell)) {
+      await query("UPDATE usuario SET lastSingIn = NOW() WHERE idusr = ?", [user.idusr]);
     }
 
     return res.json({
@@ -33,11 +45,12 @@ const login = async (req, res) => {
       message: "Login exitoso",
       idUsuario: user.idusr,
       nivelUsuario: user.nivell,
+      firstLogin: firstLogin
     });
   } catch (error) {
     console.error("Error en login:", error);
     return res.status(500).json({ success: false, message: "Error en el servidor" });
   }
-};
+}
 
 module.exports = { login };

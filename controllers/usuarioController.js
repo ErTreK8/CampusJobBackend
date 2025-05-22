@@ -1,4 +1,3 @@
-// controllers/usuarioController.js
 const { query } = require("../config/db");
 const { generateRandomPassword } = require("../utils/generatePassword");
 const { sendEmail } = require("../services/emailService");
@@ -8,55 +7,73 @@ const crearUsuario = async (req, res) => {
   const { email, nivell, cursos } = req.body;
   const { centroId } = req.params;
 
-  // 1) Validaciones básicas
+  // Validación de campos obligatorios
   if (!email || !centroId || nivell === undefined || !Array.isArray(cursos)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Faltan campos o cursos no válidos" });
+    return res.status(400).json({
+      success: false,
+      message: "Faltan campos obligatorios o cursos no es un array válido",
+    });
   }
 
   try {
-    // 2) Comprueba que el email no exista
+    let error = false;
+
+    // Validación: Email no existente
     const existing = await query("SELECT idusr FROM usuario WHERE email = ?", [
       email,
     ]);
-    if (existing.length) {
-      return res
-        .status(400)
-        .json({ success: false, message: "El email ya está en uso" });
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "El email ya está en uso",
+      });
     }
 
-    // 3) Genera y guarda el usuario
-    const rawPass = generateRandomPassword();
-    const hash = await bcrypt.hash(rawPass, 10);
-    const insertUserResult = await query(
-      "INSERT INTO usuario (email, password, nivell, actiu) VALUES (?, ?, ?, 0)",
-      [email, hash, parseInt(nivell, 10)]
-    );
-    const idusr = insertUserResult.insertId; // OkPacket provisto por query()
-
-    // 4) Asigna cursos válidos (uno a uno)
+    // Validación: Cursos pertenecen al centro
+    const cursosValidos = [];
     for (const cid of cursos) {
-      // Verifica que el curso pertenezca a este centro
       const rows = await query(
         "SELECT idcurso FROM curso WHERE idcurso = ? AND idcentro = ?",
         [cid, parseInt(centroId, 10)]
       );
-      if (rows.length) {
-        await query(
-          "INSERT INTO cursousr (idusr, idcurso) VALUES (?, ?)",
-          [idusr, cid]
-        );
+      if (rows.length > 0) {
+        cursosValidos.push(cid);
       }
     }
 
-    // 5) Asocia el usuario al centro
+    if (cursos.length > 0 && cursosValidos.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Ninguno de los cursos seleccionados pertenece al centro",
+      });
+    }
+
+    // === Si llegamos aquí, todo ha sido validado ===
+
+    // Crear usuario
+    const rawPass = generateRandomPassword();
+    const hash = await bcrypt.hash(rawPass, 10);
+    const insertUserResult = await query(
+      "INSERT INTO usuario (email, password, nivell, actiu) VALUES (?, ?, ?, 1)",
+      [email, hash, parseInt(nivell, 10)]
+    );
+    const idusr = insertUserResult.insertId;
+
+    // Asignar cursos válidos
+    for (const cursoId of cursosValidos) {
+      await query(
+        "INSERT INTO cursousr (idusr, idcurso) VALUES (?, ?)",
+        [idusr, cursoId]
+      );
+    }
+
+    // Asignar centro
     await query(
       "INSERT INTO usrcentro (idusr, idcentro) VALUES (?, ?)",
       [idusr, parseInt(centroId, 10)]
     );
 
-    // 6) Envía el correo con credenciales
+    // Enviar email
     await sendEmail(
       email,
       "Bienvenido a CampusJob",
