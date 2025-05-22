@@ -23,6 +23,7 @@ const createCurso = async (req, res) => {
       [idUsuario]
     );
     if (!user || user.length === 0) {
+      
       return res.status(404).json({ success: false, message: 'Centro no encontrado' });
     }
 
