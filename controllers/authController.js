@@ -34,7 +34,7 @@ async function login(req, res) {
         "SELECT idcentro FROM usrcentro WHERE idusr = ?",
         [user.idusr]
       );
-      console.log("usrcentro rows:", usrcentro);
+      //console.log("usrcentro rows:", usrcentro);
       if (usrcentro.length > 0) {
         idCentro = usrcentro[0].idcentro;
       }
@@ -45,17 +45,22 @@ async function login(req, res) {
         "SELECT idcentro FROM centro WHERE idusradmin = ?",
         [user.idusr]
       );
-      console.log("centro rows:", centro);
+      //console.log("centro rows:", centro);
       if (centro.length > 0) {
         idCentro = centro[0].idcentro;
       }
     }
 
+    if(!isFinite(idCentro))
+    {
+      return res.json({ success: false, message: "Este usuario no esta asignado a ningun centro" });
+
+    }
     if (!firstLogin && [0, 1, 2].includes(user.nivell)) {
       await query("UPDATE usuario SET lastSingIn = NOW() WHERE idusr = ?", [user.idusr]);
     }
 
-    console.log("Resolved idCentro:", idCentro);
+    //console.log("Resolved idCentro:", idCentro);
     return res.json({
       success: true,
       message: "Login exitoso",

@@ -56,32 +56,41 @@ const createCurso = async (req, res) => {
 // controllers/cursoController.js
 const getCursosByCentro = async (req, res) => {
   const { centroId } = req.params;
+  const { idUsuario, nivelUsuario } = req.query;
 
   if (!centroId) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Falta el ID del centro" 
-    });
+    return res.status(400).json({ success: false, message: "Falta el ID del centro" });
   }
 
   try {
-    // ✅ Usamos `SELECT *` para incluir `fotoCurso`
-    const cursos = await query(
-      'SELECT * FROM curso WHERE idcentro = ?', 
-      [centroId]
-    );
+    const nivel = parseInt(nivelUsuario, 10);
 
-    return res.json({
-      success: true,
-      data: cursos,
-    });
+    let cursos;
+    if ([3, 4].includes(nivel)) {
+      // AdminCentro/Supremo → todos los cursos del centro
+      cursos = await query(
+        "SELECT * FROM curso WHERE idcentro = ?",
+        [parseInt(centroId, 10)]
+      );
+    } else {
+      // Alumno/Empresa/Profesor → sólo los suyos
+      if (!idUsuario) {
+        return res.json({ success: true, data: [] });
+      }
+      cursos = await query(
+        `SELECT c.* 
+           FROM curso c
+           JOIN cursousr cu ON cu.idcurso = c.idcurso
+          WHERE cu.idusr = ?
+            AND c.idcentro = ?`,
+        [parseInt(idUsuario, 10), parseInt(centroId, 10)]
+      );
+    }
 
+    return res.json({ success: true, data: cursos });
   } catch (error) {
     console.error("Error al obtener cursos:", error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Error en el servidor" 
-    });
+    return res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 };
 
