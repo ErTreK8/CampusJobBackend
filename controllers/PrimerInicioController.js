@@ -93,6 +93,7 @@ const completarPerfil = async (req, res) => {
           identificador = '${nif}',
           nombre = '${nombre}',
           cognoms = '${cognoms}',
+          descripcio = '${descripcion}',
           lastSingIn = NOW()
         WHERE idusr = ${parseInt(idUsuario, 10)}
       `;
@@ -112,8 +113,8 @@ const completarPerfil = async (req, res) => {
     }
 
     // 7. Ejecutar consulta SQL construida
-    console.log("Ejecutando consulta:", sql);
-    //await query(sql); // ✅ Ahora no pasamos un array de valores
+    //console.log("Ejecutando consulta:", sql);
+    await query(sql); // ✅ Ahora no pasamos un array de valores
 
     // 8. Actualizar foto si existe
     if (req.body.fotoPerfil) {
