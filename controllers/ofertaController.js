@@ -57,7 +57,8 @@ const crearOferta = async (req, res) => {
         documentadjunto,
         fechafin,
         idCurso,
-        activo
+        activo,
+        fechapubli
       ) VALUES (
         ${parseInt(idusrpublica, 10)},
         ${imgoferte ? `'${imgoferte}'` : "NULL"},
@@ -112,11 +113,31 @@ const getOfertasByCurso = async (req, res) => {
       return res.status(404).json({ success: false, message: "Curso no encontrado" });
     }
 
-    // Traer ofertas activas
+    // Obtener las ofertas con la misma estructura que `obtenerOfertas`
     const ofertas = await query(
-      "SELECT * FROM ofertadetreball WHERE idCurso = ? AND activo = 1",
+      `SELECT
+         o.idoferta AS id,
+         o.titoloferta AS titulo,
+         o.descripciooferta AS descripcion,
+         o.tipusjornada AS jornada,
+         o.horessetmanals AS horasSemanales,
+         o.numplacesvacants AS vacantes,
+         o.presencial,
+         o.salariesperat AS salario,
+         o.fechapubli AS fechaPublicacion,
+         o.fechafin AS fechaFin,
+         o.imgoferte AS imgoferte,
+         c.nombrecentro AS empresa,
+         c.email AS ubicacion,
+         u.nomusuari AS contacto
+       FROM ofertadetreball o
+       JOIN curso cu ON o.idCurso = cu.idcurso
+       JOIN centro c ON cu.idcentro = c.idcentro
+       JOIN usuario u ON o.idusrpublica = u.idusr
+       WHERE o.idCurso = ? AND o.activo = 1`,
       [idCurso]
     );
+
     return res.json({ success: true, data: ofertas });
   } catch (error) {
     console.error("Error al obtener ofertas por curso:", error);
@@ -125,28 +146,6 @@ const getOfertasByCurso = async (req, res) => {
 };
 
 
-// Obtener todas las ofertas
-const obtenerOfertas = async (req, res) => {
-  try {
-    const rows = await query(
-      `SELECT
-         idoferta AS id,
-         titoloferta AS titulo,
-         descripciooferta AS descripcion,
-         tipusjornada AS jornada,
-         horessetmanals AS horasSemanales,
-         numplacesvacants AS vacantes,
-         presencial,
-         salariesperat AS salario,
-         fechapubli AS fechaPublicacion,
-         fechafin AS fechaFin
-       FROM ofertadetreball`
-    );
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    console.error('Error al obtener las ofertas:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor al obtener las ofertas' });
-  }
-};
 
-module.exports = { crearOferta, getOfertasByCurso, obtenerOfertas };
+
+module.exports = { crearOferta, getOfertasByCurso };
