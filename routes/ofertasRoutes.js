@@ -1,15 +1,16 @@
-const express = require('express');
+// routes/ofertasRoutes.js
+const express = require("express");
 const router = express.Router();
+const { crearOferta, getOfertasByCurso } = require("../controllers/ofertaController");
+const upload = require("../middleware/multer");
 
-const { crearOferta, obtenerOfertas } = require('../controllers/ofertaController');
-const upload = require('../middleware/multer'); // Ajusta esta ruta según donde tengas multer.js
-
-
-// Ruta para crear oferta, aceptando dos archivos diferentes
-router.post('/crearOferta', upload.fields([
-  { name: 'imgoferte', maxCount: 1 },
-  { name: 'documentadjunto', maxCount: 1 }
+// ✅ Nueva ruta: /api/centro/curso/5/oferta
+router.post("/curso/:cursoId/crearOferta", upload.fields([
+  { name: "imgoferte", maxCount: 1 },
+  { name: "documentadjunto", maxCount: 1 }
 ]), crearOferta);
-router.get('/ofertas', obtenerOfertas);
+
+// Ruta para obtener ofertas por curso (ya existe)
+router.get("/curso/:idCurso/ofertas", getOfertasByCurso);
 
 module.exports = router;
