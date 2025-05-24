@@ -18,12 +18,10 @@ const crearOferta = async (req, res) => {
   } = req.body;
   const { cursoId } = req.params;
 
-  // ✅ Validar campos obligatorios
   if (!titoloferta || !descripciooferta || !tipusjornada || !fechafin || !idusrpublica) {
     return res.status(400).json({ success: false, message: "Faltan campos obligatorios" });
   }
 
-  // ✅ Validar campos numéricos y convertir a `NULL` si no son válidos
   const validarNumero = (value) => {
     const num = parseFloat(value);
     return isNaN(num) ? "NULL" : num;
@@ -34,7 +32,6 @@ const crearOferta = async (req, res) => {
   const salarioValidado = validarNumero(salariesperat);
 
   try {
-    // ✅ Validar que el curso exista
     const [curso] = await query("SELECT * FROM curso WHERE idcurso = ?", [
       parseInt(cursoId, 10)
     ]);
@@ -42,7 +39,6 @@ const crearOferta = async (req, res) => {
       return res.status(404).json({ success: false, message: "Curso no encontrado" });
     }
 
-    // ✅ Construir consulta SQL con `"NULL"` para campos vacíos
     const sql = `
       INSERT INTO ofertadetreball (
         idusrpublica, 
@@ -72,19 +68,17 @@ const crearOferta = async (req, res) => {
         ${documentadjunto ? `'${documentadjunto}'` : "NULL"},
         '${fechafin}',
         ${parseInt(cursoId, 10)},
-        1
+        1,
+        NOW()
       )
     `;
 
-    // ✅ Ejecutar consulta y capturar resultado
     const result = await query(sql);
 
-    // ✅ Verificar que `result` tenga `insertId`
     if (!result || !result.insertId) {
       throw new Error("No se pudo obtener el ID de la oferta creada");
     }
 
-    // ✅ Insertar requisitos usando el `insertId` del primer insert
     if (Array.isArray(requisitos) && requisitos.length > 0) {
       const values = requisitos.map((req) => `(${result.insertId}, '${req}')`).join(",");
       await query(`INSERT INTO requisitsoferta (idoferta, requisito) VALUES ${values}`);
@@ -96,6 +90,7 @@ const crearOferta = async (req, res) => {
     return res.status(500).json({ success: false, message: "Error en el servidor", error: error.message });
   }
 };
+
 
 
 const getOfertasByCurso = async (req, res) => {
