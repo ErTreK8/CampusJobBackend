@@ -142,5 +142,54 @@ const getOfertasByCurso = async (req, res) => {
 
 
 
+const getOfertaById = async (req, res) => {
+  const idOferta = parseInt(req.params.idOferta, 10);
+  if (isNaN(idOferta)) {
+    return res.status(400).json({ success: false, message: "ID de oferta inválido" });
+  }
+  try {
+    const oferta = await query(`
+      SELECT * FROM ofertadetreball WHERE idoferta = ?
+    `, [idOferta]);
 
-module.exports = { crearOferta, getOfertasByCurso };
+    const requisitos = await query(`
+      SELECT requisito FROM requisitsoferta WHERE idoferta = ?
+    `, [idOferta]);
+
+    return res.json({ success: true, oferta: oferta[0], requisitos });
+  } catch (error) {
+    console.error("Error al obtener oferta:", error);
+    return res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+};
+
+const enviarCV = async (req, res) => {
+  const idOferta = parseInt(req.params.idOferta, 10);
+  const idUsr = parseInt(req.body.idUsr, 10); // ✅ Ahora se recibe desde el cuerpo
+
+  if (!idOferta || !idUsr) {
+    return res.status(400).json({ success: false, message: "Faltan datos obligatorios" });
+  }
+
+  try {
+    // ✅ Verificar que el usuario tenga un CV subido
+    const [user] = await query("SELECT cvpdf FROM usuario WHERE idusr = ?", [idUsr]);
+    if (!user || !user.cvpdf) {
+      return res.status(400).json({ success: false, message: "El usuario no tiene CV subido" });
+    }
+
+    // ✅ Insertar en ofertausr con estado 0
+    await query(
+      "INSERT INTO ofertausr (idoferta, idusr, Estado) VALUES (?, ?, 0)",
+      [idOferta, idUsr]
+    );
+
+    return res.json({ success: true, message: "CV enviado correctamente" });
+  } catch (error) {
+    console.error("Error al enviar CV:", error);
+    return res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+};
+
+module.exports = { crearOferta, getOfertasByCurso, getOfertaById, enviarCV };
+
