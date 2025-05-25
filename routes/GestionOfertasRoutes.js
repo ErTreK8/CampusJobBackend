@@ -1,11 +1,14 @@
 // routes/GestionOfertasRoutes.js
 const express = require("express");
 const router = express.Router();
-const { getOfertasPropias } = require("../controllers/GestionOfertasController");
+const { getOfertasPropias, getAplicacionesPorOferta, actualizarEstadoAplicacion } = require("../controllers/GestionOfertasController");
 
-// ✅ Ruta para obtener todas las ofertas de la empresa (sin filtros)
+// ✅ Ruta para obtener todas las ofertas de la empresa
 router.get("/:idUsrEmpresa/ofertas", getOfertasPropias);
 
-// ✅ Ruta para obtener información de una oferta específica
+router.get("/:idOferta/aplicaciones", getAplicacionesPorOferta);
+
+// ✅ Ruta para actualizar estado de aplicación
+router.patch("/:idOferta/actualizar-estado/:idUsr", actualizarEstadoAplicacion);
 
 module.exports = router;
