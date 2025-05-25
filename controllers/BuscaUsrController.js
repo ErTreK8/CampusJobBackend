@@ -73,51 +73,57 @@ const getUserById = async (req, res) => {
   const updateProfile = async (req, res) => {
     const { idUsr } = req.params;
     const userId = parseInt(idUsr, 10);
-    const { nivel, ...updates } = req.body;
   
-    if (!userId || !nivel) {
-      return res.status(400).json({ success: false, message: "Datos incompletos" });
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "ID de usuario inválido" });
     }
   
     try {
+      const { nivel, nombre, apellido, descripcion, empresaNombre, fotoPerfil } = req.body;
+  
       let sql = "UPDATE usuario SET ";
-      let values = [];
+      let cambios = [];
   
-      // ✅ Campos comunes
-      if (nivel === "0" || nivel === "1" || nivel === "2") {
-        sql += "email = ?";
-        values.push(updates.email || null);
+      if (nivel === "0" || nivel === "2") {
+        if (nombre !== undefined) {
+          cambios.push(`nombre = '${nombre.replace(/'/g, "''")}'`);
+        }
+        if (apellido !== undefined) {
+          cambios.push(`cognoms = '${apellido.replace(/'/g, "''")}'`);
+        }
+        if (descripcion !== undefined) {
+          cambios.push(`descripcio = '${descripcion.replace(/'/g, "''")}'`);
+        }
+      } else if (nivel === "1") {
+        if (empresaNombre !== undefined) {
+          cambios.push(`nom_empresausr = '${empresaNombre.replace(/'/g, "''")}'`);
+        }
+        if (descripcion !== undefined) {
+          cambios.push(`descripcio = '${descripcion.replace(/'/g, "''")}'`);
+        }
       }
   
-      // ✅ Campos específicos por nivel
-      if (nivel === "1") {
-        sql += ", nom_empresausr = ?, identificador = ?, telefono = ?";
-        values.push(updates.empresaNombre || null);
-        values.push(updates.nif || null);
-        values.push(updates.telefono || null);
-      } else if (nivel === "0") {
-        sql += ", nombre = ?, cognoms = ?, curriculum = ?";
-        values.push(updates.nombre || null);
-        values.push(updates.apellido || null);
-        values.push(updates.curriculum || null);
-      } else if (nivel === "2") {
-        sql += ", nombre = ?, cognoms = ?, especialidad = ?, experiencia = ?";
-        values.push(updates.nombre || null);
-        values.push(updates.apellido || null);
-        values.push(updates.especialidad || null);
-        values.push(updates.experiencia || null);
+      if (fotoPerfil !== undefined && fotoPerfil !== null) {
+        cambios.push(`fotoperfil = '${fotoPerfil.replace(/'/g, "''")}'`);
       }
   
-      sql += " WHERE idusr = ?";
-      values.push(userId);
+      if (cambios.length === 0) {
+        return res.status(400).json({ success: false, message: "No se proporcionaron datos para actualizar." });
+      }
   
-      // ✅ Ejecutar actualización
-      await query(sql, values);
-      return res.json({ success: true, message: "Perfil actualizado" });
+      sql += cambios.join(", ");
+      sql += ` WHERE idusr = ${userId}`;
+  
+      //console.log("Consulta SQL final:", sql);
+  
+      await query(sql);
+  
+      return res.json({ success: true, message: "Perfil actualizado exitosamente" });
     } catch (error) {
       console.error("Error al actualizar perfil:", error.message);
       return res.status(500).json({ success: false, message: "Error en el servidor" });
     }
   };
+  
   
   module.exports = { searchUsers, getUserById, updateProfile };

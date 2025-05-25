@@ -173,8 +173,8 @@ const enviarCV = async (req, res) => {
 
   try {
     // ✅ Verificar que el usuario tenga un CV subido
-    const [user] = await query("SELECT cvpdf FROM usuario WHERE idusr = ?", [idUsr]);
-    if (!user || !user.cvpdf) {
+    const [user] = await query("SELECT curriculum FROM usuario WHERE idusr = ?", [idUsr]);
+    if (!user || !user.curriculum) {
       return res.status(400).json({ success: false, message: "El usuario no tiene CV subido" });
     }
 
