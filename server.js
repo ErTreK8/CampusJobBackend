@@ -2,6 +2,8 @@
 const express = require("express");
 const cors = require("cors");
 
+const buscaUsrRoutes = require("./routes/BuscaUsrRoutes");
+
 const authRoutes = require("./routes/authRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const ofertasRoutes = require("./routes/ofertasRoutes");
@@ -23,6 +25,8 @@ app.use("/api/centro", ofertasRoutes);
 app.use("/api/centro", centroRoutes);
 app.use("/api/centro", usuarioRoutes); 
 app.use("/api/centro", cursoRoutes); 
+app.use("/api/buscausr", buscaUsrRoutes); 
+
 
 app.use("/api/adminCentro", adminCentroRoutes);
 
