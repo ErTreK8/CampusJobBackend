@@ -1,6 +1,6 @@
 // controllers/GestionOfertasController.js
 const { query } = require("../config/db");
-const { sendEmailController } = require("../controllers/emailController");
+const { sendEmail } = require('../services/emailService');
 
 
 // ✅ Cargar todas las ofertas de la empresa sin filtrar por fecha o estado
@@ -61,41 +61,50 @@ const getOfertasPropias = async (req, res) => {
     const { nuevoEstado } = req.body;
   
     try {
-      // ✅ Validar que el nuevo estado sea 1 (Aprobado) o 2 (Rechazado)
-      if ([1, 2].indexOf(nuevoEstado) === -1) {
+      // ✅ Validar que el nuevo estado sea 1 o 2
+      if (![1, 2].includes(nuevoEstado)) {
         return res.status(400).json({ success: false, message: "Estado inválido" });
       }
   
-      // ✅ Actualizar el estado en la base de datos
-      await query(
-        `UPDATE ofertausr SET Estado = ? WHERE idoferta = ? AND idusr = ?`,
-        [nuevoEstado, idOferta, idUsr]
-      );
+      // ✅ Actualizar estado en la base de datos
+      await query(`UPDATE ofertausr SET Estado = ? WHERE idoferta = ? AND idusr = ?`, [
+        nuevoEstado,
+        idOferta,
+        idUsr,
+      ]);
   
-      // ✅ Obtener email del candidato
+      // ✅ Obtener datos del candidato
       const [candidato] = await query(
-        "SELECT email FROM usuario WHERE idusr = ?",
+        "SELECT email, nombre, cognoms FROM usuario WHERE idusr = ?",
         [idUsr]
       );
+      if (!candidato) {
+        return res.status(404).json({ success: false, message: "Candidato no encontrado" });
+      }
   
       // ✅ Obtener título de la oferta
       const [oferta] = await query(
-        "SELECT titoloferta AS titulo FROM ofertadetreball WHERE idoferta = ?",
+        "SELECT titoloferta FROM ofertadetreball WHERE idoferta = ?",
         [idOferta]
       );
-  
-      // ✅ Enviar correo según el estado
-      if (nuevoEstado === 1) {
-        // Aprobado
-        const mensaje = `Felicidades, te han aceptado en la oferta "${oferta.titulo}". La empresa contactará contigo pronto.`;
-        await sendEmailController(candidato.email, "Aceptación de Oferta", mensaje);
-      } else if (nuevoEstado === 2) {
-        // Rechazado
-        const mensaje = `Lo sentimos, no has sido aceptado en la oferta "${oferta.titulo}".`;
-        await sendEmailController(candidato.email, "Rechazo de Oferta", mensaje);
+      if (!oferta) {
+        return res.status(404).json({ success: false, message: "Oferta no encontrada" });
       }
   
-      return res.json({ success: true, message: "Estado actualizado correctamente" });
+      // ✅ Enviar correo según el estado
+      const destinatario = candidato.email;
+      const asunto = nuevoEstado === 1 
+        ? `¡Felicidades! Has sido aceptado en "${oferta.titoloferta}"` 
+        : `Lo sentimos, no has sido aceptado en "${oferta.titoloferta}"`;
+      const mensaje = nuevoEstado === 1
+        ? `Felicidades, te han aceptado en la oferta "${oferta.titoloferta}". La empresa contactará contigo pronto.`
+        : `Lo sentimos, no has sido aceptado en la oferta "${oferta.titoloferta}".`;
+  
+      // ✅ Usar directamente el servicio de email
+      await sendEmail(destinatario, asunto, mensaje);
+  
+      return res.json({ success: true, message: "Estado actualizado y correo enviado" });
+  
     } catch (error) {
       console.error("Error al actualizar estado o enviar correo:", error.message);
       return res.status(500).json({ success: false, message: "Error en el servidor" });
