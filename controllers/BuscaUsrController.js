@@ -79,7 +79,7 @@ const getUserById = async (req, res) => {
     }
   
     try {
-      const { nivel, nombre, apellido, descripcion, empresaNombre, fotoPerfil } = req.body;
+      const { nivel, nombre, apellido, descripcion, empresaNombre, fotoPerfil, curriculum } = req.body;
   
       let sql = "UPDATE usuario SET ";
       let cambios = [];
@@ -107,14 +107,16 @@ const getUserById = async (req, res) => {
         cambios.push(`fotoperfil = '${fotoPerfil.replace(/'/g, "''")}'`);
       }
   
+      if (curriculum !== undefined && curriculum !== null) {
+        cambios.push(`curriculum = '${curriculum.replace(/'/g, "''")}'`);
+      }
+  
       if (cambios.length === 0) {
         return res.status(400).json({ success: false, message: "No se proporcionaron datos para actualizar." });
       }
   
       sql += cambios.join(", ");
       sql += ` WHERE idusr = ${userId}`;
-  
-      //console.log("Consulta SQL final:", sql);
   
       await query(sql);
   
@@ -124,6 +126,7 @@ const getUserById = async (req, res) => {
       return res.status(500).json({ success: false, message: "Error en el servidor" });
     }
   };
+  
   
   
   module.exports = { searchUsers, getUserById, updateProfile };
