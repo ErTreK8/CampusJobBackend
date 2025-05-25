@@ -11,6 +11,8 @@ const adminCentroRoutes = require("./routes/adminCentroRoutes");
 const centroRoutes = require("./routes/centroRoutes");
 const usuarioRoutes = require("./routes/usuarioRoutes"); 
 const cursoRoutes = require("./routes/cursoRoutes");
+const getsionOfertaRoutes = require("./routes/GestionOfertasRoutes");
+
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,6 +28,8 @@ app.use("/api/centro", centroRoutes);
 app.use("/api/centro", usuarioRoutes); 
 app.use("/api/centro", cursoRoutes); 
 app.use("/api/buscausr", buscaUsrRoutes); 
+app.use("/api/empresa", getsionOfertaRoutes);
+
 
 
 app.use("/api/adminCentro", adminCentroRoutes);
