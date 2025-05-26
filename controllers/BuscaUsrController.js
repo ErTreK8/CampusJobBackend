@@ -84,6 +84,17 @@ const getUserById = async (req, res) => {
       let sql = "UPDATE usuario SET ";
       let cambios = [];
   
+      // ✅ Siempre incluir `descripcion` si se envía
+      if (descripcion !== undefined && descripcion !== null) {
+        cambios.push(`descripcio = '${descripcion.replace(/'/g, "''")}'`);
+      }
+  
+      // ✅ Siempre incluir `curriculum` si se envía
+      if (curriculum !== undefined && curriculum !== null) {
+        cambios.push(`curriculum = '${curriculum.replace(/'/g, "''")}'`);
+      }
+  
+      // ✅ Campos según el nivel del usuario
       if (nivel === "0" || nivel === "2") {
         if (nombre !== undefined) {
           cambios.push(`nombre = '${nombre.replace(/'/g, "''")}'`);
@@ -91,35 +102,25 @@ const getUserById = async (req, res) => {
         if (apellido !== undefined) {
           cambios.push(`cognoms = '${apellido.replace(/'/g, "''")}'`);
         }
-        if (descripcion !== undefined) {
-          cambios.push(`descripcio = '${descripcion.replace(/'/g, "''")}'`);
-        }
       } else if (nivel === "1") {
         if (empresaNombre !== undefined) {
           cambios.push(`nom_empresausr = '${empresaNombre.replace(/'/g, "''")}'`);
         }
-        if (descripcion !== undefined) {
-          cambios.push(`descripcio = '${descripcion.replace(/'/g, "''")}'`);
-        }
       }
   
+      // ✅ Siempre incluir `fotoPerfil` si se envía
       if (fotoPerfil !== undefined && fotoPerfil !== null) {
         cambios.push(`fotoperfil = '${fotoPerfil.replace(/'/g, "''")}'`);
       }
   
-      if (curriculum !== undefined && curriculum !== null) {
-        cambios.push(`curriculum = '${curriculum.replace(/'/g, "''")}'`);
-      }
-  
       if (cambios.length === 0) {
-        return res.status(400).json({ success: false, message: "No se proporcionaron datos para actualizar." });
+        return res.status(400).json({ success: false, message: "No hay cambios que aplicar" });
       }
   
       sql += cambios.join(", ");
       sql += ` WHERE idusr = ${userId}`;
   
       await query(sql);
-  
       return res.json({ success: true, message: "Perfil actualizado exitosamente" });
     } catch (error) {
       console.error("Error al actualizar perfil:", error.message);
