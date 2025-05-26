@@ -20,7 +20,7 @@ const searchUsers = async (req, res) => {
         u.fotoperfil
       FROM usuario u
       INNER JOIN usrcentro uc ON u.idusr = uc.idusr
-      WHERE u.actiu = 1
+      WHERE u.lastSingIn IS NOT NULL AND u.actiu = 1
         AND uc.idcentro = ${centroIdNum}
     `;
 
